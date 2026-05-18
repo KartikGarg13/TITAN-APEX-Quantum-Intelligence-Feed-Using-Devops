@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITAN APEX | Quantum Intelligence Feed</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;700;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0c10; --card: #14151a; --accent: #00f2ff;
+            --path: #bcff66; --muted: #5e5e66; --yellow: #facc15;
+            --danger: #ff3e3e;
+            /* Advanced Enterprise Color Schemes */
+            --blue-env: #3b82f6; --green-env: #10b981;
+            --purple-mesh: #a855f7;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: #fff; height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        .dashboard { width: 98%; height: 95vh; display: grid; grid-template-columns: 400px 1fr; gap: 20px; }
+
+        .sidebar { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 5px; position: relative; z-index: 100; height: 100%; }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+
+        .header h1 { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -1px; }
+        .header p { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+
+        .status-card {
+            background: var(--card); border-radius: 18px; padding: 22px;
+            border: 2px solid transparent; transition: 0.3s;
+        }
+        .status-card.cyan { border-color: var(--accent); box-shadow: 0 0 20px rgba(0, 242, 255, 0.11); }
+        .status-card.lime { border-color: var(--path); box-shadow: 0 0 20px rgba(188, 255, 102, 0.11); }
+        
+        .label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .val { font-family: 'JetBrains Mono'; font-size: 26px; color: var(--accent); }
+
+        .security-meter {
+            background: #000; border-radius: 18px; padding: 15px;
+            border: 1px solid #222; transition: 0.5s;
+        }
+        .progress-container {
+            width: 100%; height: 6px; background: #1a1a1f; 
+            border-radius: 10px; margin-top: 8px; overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%; width: 100%; background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            transition: 0.5s; animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .breach .progress-bar { background: var(--danger); box-shadow: 0 0 15px var(--danger); width: 100% !important; }
+        .breach #sec-percent { color: var(--danger) !important; animation: blink 0.5s infinite; }
+
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .metrics-bar {
+            background: #000; border-radius: 18px; padding: 20px;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;
+        }
+        .m-num { display: block; font-family: 'JetBrains Mono'; font-size: 18px; color: var(--path); font-weight: bold; }
+
+        select { 
+            width: 100%; padding: 14px; background: #1c1d24; border: 1px solid #333; 
+            border-radius: 10px; color: white; font-size: 13px; outline: none; cursor: pointer;
+        }
+
+        .btn-link {
+            width: 100%; padding: 20px; background: var(--accent); color: #000;
+            border: none; border-radius: 14px; font-weight: 900; font-size: 13px;
+            cursor: pointer; text-transform: uppercase; transition: 0.2s;
+        }
+        .btn-link:hover { transform: scale(1.02); }
+
+        .btn-intel {
+            width: 100%; padding: 12px; background: transparent; color: var(--path);
+            border: 1px solid var(--path); border-radius: 10px; font-weight: 700; font-size: 11px;
+            cursor: pointer; text-transform: uppercase; transition: 0.2s; margin-top: -5px;
+        }
+
+        .system-box {
+            background: #000; border-radius: 18px; padding: 18px; flex-grow: 1; min-height: 120px;
+            font-family: 'JetBrains Mono'; font-size: 11px; color: var(--path); border: 1px solid #1a1a1f;
+            overflow-y: auto;
+        }
+
+        /* FIXED STYLING RULES TO PREVENT HEIGHT COLLAPSE */
+        .map-container { 
+            position: relative; 
+            width: 100%;
+            height: 100%;
+            border-radius: 24px; 
+            overflow: hidden; 
+            border: 1px solid #333; 
+            background: #000; 
+        }
+        
+        #world-map {
+            position: absolute; 
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/8/83/Equirectangular_projection_SW.jpg');
+            background-size: 100% 100%; 
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: brightness(0.6) contrast(1.2) saturate(1.1); 
+            opacity: 1;
+            z-index: 1;
+        }
+        
+        canvas { 
+            position: absolute; top: 0; left: 0; 
+            z-index: 5; 
+            width: 100%; height: 100%; 
+            pointer-events: none; 
+        }
+
+        /* INTEL OVERLAY */
+        #intel-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            z-index: 1000; display: none; align-items: center; justify-content: center;
+        }
+        .intel-modal {
+            width: 600px; background: #000; border: 1px solid var(--accent);
+            padding: 40px; border-radius: 20px; font-family: 'JetBrains Mono';
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.2);
+        }
+        .intel-modal h2 { color: var(--accent); margin-bottom: 20px; font-size: 20px; border-bottom: 1px solid var(--accent); padding-bottom: 10px; }
+        .intel-grid { display: grid; grid-template-columns: 1fr; gap: 15px; color: #fff; font-size: 13px; }
+        .intel-item { border-bottom: 1px solid #222; padding-bottom: 10px; }
+        .intel-label { color: var(--muted); display: block; font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }
+
+        /* ADVANCED CONTROL PLANE AREA */
+        .devops-panel {
+            background: #101114; border-radius: 18px; padding: 15px; border: 1px solid #2a2b36;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .devops-row { display: flex; justify-content: space-between; align-items: center; font-family: 'JetBrains Mono'; font-size: 11px; }
+        .devops-pill { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .devops-pill.blue { background: rgba(59, 130, 246, 0.2); color: var(--blue-env); border: 1px solid var(--blue-env); }
+        .devops-pill.green { background: rgba(16, 185, 129, 0.2); color: var(--green-env); border: 1px solid var(--green-env); }
+        .devops-pill.orange { background: rgba(249, 115, 22, 0.2); color: #f97316; border: 1px solid #f97316; }
+        .devops-pill.purple { background: rgba(168, 85, 247, 0.2); color: var(--purple-mesh); border: 1px solid var(--purple-mesh); }
+        
+        .devops-btn-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 2px; }
+        .devops-btn {
+            background: #1c1d24; border: 1px solid #444; color: #fff; padding: 6px 4px; 
+            font-size: 9px; font-family: 'JetBrains Mono'; border-radius: 6px; cursor: pointer; transition: 0.2s;
+            text-align: center; white-space: nowrap; overflow: hidden; text-transform: uppercase; font-weight: bold;
+        }
+        .devops-btn:hover { background: #2d2f3a; border-color: var(--accent); }
+        .devops-btn.chaos:hover { border-color: var(--danger); color: var(--danger); }
+        .devops-btn.gitops:hover { border-color: var(--path); color: var(--path); }
+        .devops-btn.mesh:hover { border-color: var(--purple-mesh); color: var(--purple-mesh); }
+
+        @media print {
+            body { background: #ffffff !important; color: #000000 !important; overflow: visible !important; }
+            .dashboard, canvas, #world-map { display: none !important; }
+            #intel-overlay { 
+                position: relative !important; display: flex !important; 
+                background: #fff !important; backdrop-filter: none !important; 
+                padding: 0 !important; width: 100% !important; height: auto !important;
+            }
+            .intel-modal { 
+                border: 2px solid #000 !important; box-shadow: none !important; 
+                width: 100% !important; padding: 20px !important; 
+                background: #fff !important; color: #000 !important;
+            }
+            .intel-modal h2, .intel-label, .intel-item { color: #000 !important; border-color: #000 !important; }
+            .btn-link, .btn-intel { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="intel-overlay">
+    <div class="intel-modal">
+        <h2>QUANTUM NETWORK INTEL REPORT</h2>
+        <div class="intel-grid" id="intel-content"></div>
+        <div style="display:flex; gap:10px; margin-top:30px;" class="no-print">
+            <button class="btn-link" onclick="window.print()" style="background:var(--path)">Print Report</button>
+            <button class="btn-link" onclick="document.getElementById('intel-overlay').style.display='none'">Close</button>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard">
+    <div class="sidebar">
+        <div class="header">
+            <h1>TITAN APEX</h1>
+            <p>Quantum Intelligence Feed</p>
+        </div>
+
+        <div class="status-card cyan">
+            <span class="label">Origin Status</span>
+            <div class="val" id="origin-info">INITIATING...</div>
+        </div>
+
+        <div class="status-card lime">
+            <span class="label">Destination Status</span>
+            <div class="val lime" id="dest-info" style="color:#9be9ff">INITIATING...</div>
+        </div>
+
+        <!-- TELEMETRY, INTERRUPTS & EDGE SECURITY PANEL -->
+        <div class="devops-panel">
+            <div class="devops-row">
+                <span class="label" style="margin:0;">Edge Analytics Array</span>
+                <span id="active-env-pill" class="devops-pill blue">Edge_Scrapers_Ok</span>
+            </div>
+            <div class="devops-row">
+                <span style="color: var(--muted)">BGP Leak Filter:</span>
+                <span id="ebpf-state" style="color:var(--path)">AS_PATH Verified</span>
+            </div>
+            <div class="progress-container" style="margin-top:0; height: 4px;">
+                <div id="canary-bar" style="height:100%; width: 100%; background: var(--blue-env); transition: 0.5s;"></div>
+            </div>
+            <div class="devops-row" style="margin-top: 2px;">
+                <span style="color: var(--muted)">WAF Layer 7 Mitigation:</span>
+                <span id="pod-count" style="color:var(--path)">0 Malicious Request Anomalies</span>
+            </div>
+            <div class="devops-row">
+                <span style="color: var(--muted)">Quantum Entropy Pool:</span>
+                <span id="circuit-breaker" style="color:#fff">4096-bit Dense Pool</span>
+            </div>
+            <div class="devops-row">
+                <span style="color: var(--muted)">Hardware Decoupling:</span>
+                <span id="secret-expiry" style="color:var(--accent)">Air-Gapped Optical Array</span>
+            </div>
+            <div class="devops-btn-group">
+                <button class="devops-btn" onclick="triggerCanaryDeployment()">BGP Scrub</button>
+                <button class="devops-btn chaos" onclick="injectChaosFault()">L7 Stress</button>
+                <button class="devops-btn mesh" onclick="cycleServiceMesh()">Entropy Flush</button>
+            </div>
+        </div>
+
+        <div id="sec-module" class="security-meter">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="label" style="margin:0;">Network Security</span>
+                <span id="sec-percent" style="font-family:'JetBrains Mono'; font-size:12px; color:var(--accent);">SECURE</span>
+            </div>
+            <div class="progress-container"><div id="sec-bar" class="progress-bar"></div></div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <span class="label" style="margin:0;">Global Traffic Load</span>
+                <span id="traffic-load" style="font-family:'JetBrains Mono'; font-size:12px; color:var(--path);">31.4%</span>
+            </div>
+        </div>
+
+        <div class="metrics-bar">
+            <div><span class="label">Hops</span><span id="hop-count" class="m-num">0</span></div>
+            <div><span class="label">Risk Index</span><span id="path-cost" class="m-num">0</span></div>
+            <div><span class="label">Latency</span><span id="latency-val" class="m-num">0ms</span></div>
+        </div>
+
+        <div class="select-group">
+            <span class="label">Neural Origin</span>
+            <select id="startPoint" onchange="updateWeather()"></select>
+        </div>
+
+        <div class="select-group">
+            <span class="label">Destination Hub</span>
+            <select id="endPoint" onchange="updateWeather()"></select>
+        </div>
+
+        <button class="btn-link" onclick="handleInitiate()">Initiate Quantum Link</button>
+        <button class="btn-intel" onclick="generateIntelReport()">Generate Intel Report</button>
+
+        <div class="system-box" id="sys-log">> SYSTEM_READY<br>> AWAITING_AUTHENTICATION</div>
+    </div>
+
+    <div class="map-container">
+        <div id="world-map"></div>
+        <canvas id="flowCanvas"></canvas>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('flowCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const Nodes = {
+        'Seattle': {lat: 47.6, lon: -122.3, vuln: 0.1}, 'New York': {lat: 40.7, lon: -74.0, vuln: 0.2},
+        'Mexico City': {lat: 19.4, lon: -99.1, vuln: 0.5}, 'Sao Paulo': {lat: -23.5, lon: -46.6, vuln: 0.4},
+        'London': {lat: 51.5, lon: -0.1, vuln: 0.1}, 'Berlin': {lat: 52.5, lon: 13.4, vuln: 0.1},
+        'Moscow': {lat: 55.7, lon: 37.6, vuln: 0.9}, 'Cairo': {lat: 30.0, lon: 31.2, vuln: 0.7},
+        'Dubai': {lat: 25.2, lon: 55.2, vuln: 0.3}, 'New Delhi': {lat: 28.6, lon: 77.2, vuln: 0.5},
+        'Mumbai': {lat: 19.0, lon: 72.8, vuln: 0.4}, 'Singapore': {lat: 1.3, lon: 103.8, vuln: 0.2},
+        'Tokyo': {lat: 35.6, lon: 139.6, vuln: 0.1}, 'Sydney': {lat: -33.8, lon: 151.2, vuln: 0.1},
+        'Cape Town': {lat: -33.9, lon: 18.4, vuln: 0.4}
+    };
+
+    const Edges = [
+        ['Seattle','New York'], ['New York','London'], ['London','Berlin'], ['Berlin','Moscow'],
+        ['Moscow','Tokyo'], ['Tokyo','Seattle'], ['New York','Mexico City'], ['Mexico City','Sao Paulo'],
+        ['Sao Paulo','Cape Town'], ['Cape Town','Cairo'], ['Cairo','Dubai'], ['Dubai','Mumbai'],
+        ['Mumbai','New Delhi'], ['New Delhi','Moscow'], ['Mumbai','Singapore'], ['Singapore','Sydney'], ['Sydney','Tokyo']
+    ];
+
+    let currentPath = [];
+    let dataPackets = [];
+    let dashOffset = 0;
+
+    function getXY(lat, lon) {
+        return { x: (lon + 180) * (canvas.width / 360), y: (90 - lat) * (canvas.height / 180) };
+    }
+
+    async function updateWeather() {
+        const sCity = document.getElementById('startPoint').value;
+        const dCity = document.getElementById('endPoint').value;
+        const fetchT = async (city, elId) => {
+            try {
+                const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${Nodes[city].lat}&longitude=${Nodes[city].lon}&current_weather=true`);
+                const d = await r.json();
+                document.getElementById(elId).innerText = `${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: false})} | ${Math.round(d.current_weather.temperature)}°C`;
+            } catch (e) { document.getElementById(elId).innerText = `SYNC ERR`; }
+        };
+        fetchT(sCity, 'origin-info'); fetchT(dCity, 'dest-info');
+    }
+
+    function handleInitiate() {
+        const log = document.getElementById('sys-log');
+        log.innerHTML = `> INITIATING RSA-4096 HANDSHAKE...`;
+        setTimeout(() => {
+            log.innerHTML += `<br>> EXCHANGING AES-256 SESSION KEYS... [OK]`;
+            setTimeout(() => {
+                log.innerHTML += `<br>> VERIFYING SHA-384 INTEGRITY... [OK]`;
+                updateWeather();
+                runDijkstra();
+            }, 600);
+        }, 600);
+    }
+
+    // EDGE SCRAPER & PERIMETER MITIGATION LOGIC
+    let isDeploying = false;
+    let chaosActive = false;
+    let meshCycling = false;
+    let anomalyDetected = false;
+
+    function triggerCanaryDeployment() {
+        if(isDeploying || chaosActive || meshCycling) return;
+        isDeploying = true;
+        const log = document.getElementById('sys-log');
+        const pill = document.getElementById('active-env-pill');
+        const bar = document.getElementById('canary-bar');
+        const pods = document.getElementById('pod-count');
+        const ebpf = document.getElementById('ebpf-state');
+
+        log.innerHTML += `<br><span style="color:var(--accent)">> BGP_ROUTER: RE-EVALUATING DECLARED AUTONOMOUS PATH COUPLINGS...</span>`;
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            if(progress <= 100) {
+                bar.style.width = `${100 - progress}%`;
+                ebpf.innerText = `Scrubbing AS_PATH...`;
+                if(progress === 30) {
+                    pill.className = "devops-pill green";
+                    pill.innerText = "BGP_Mitigation_Active";
+                }
+            } else {
+                clearInterval(interval);
+                pill.innerText = "Edge_Scrapers_Ok";
+                ebpf.innerText = "AS_PATH Verified";
+                log.innerHTML += `<br><span style="color:var(--path)">> EDGE_ANALYTICS: BGP PREFIX LEAK INJECTIONS PURGED AND AGGREGATED.</span>`;
+                isDeploying = false;
+            }
+        }, 400);
+    }
+
+    function injectChaosFault() {
+        if(chaosActive || isDeploying || meshCycling) return;
+        chaosActive = true;
+        
+        const log = document.getElementById('sys-log');
+        const pill = document.getElementById('active-env-pill');
+        const pods = document.getElementById('pod-count');
+        const cbStatus = document.getElementById('circuit-breaker');
+        
+        const oldPillText = pill.innerText;
+        const oldPillClass = pill.className;
+
+        log.innerHTML += `<br><span style="color:var(--danger)">> L7_WAF: FLOODING PERIMETER LOGS WITH HTTP FLOOD ATTACK PATTERNS...</span>`;
+        
+        setTimeout(() => {
+            pill.className = "devops-pill orange";
+            pill.innerText = "DDoS_Mitigation_Run";
+            pods.style.color = "var(--danger)";
+            pods.innerText = "38,410 Suspicious Requests / Sec";
+            cbStatus.style.color = "var(--danger)";
+            cbStatus.innerText = "RATE_LIMIT_ENGAGED";
+            log.innerHTML += `<br><span style="color:var(--danger)">> REVERSE_PROXY: DROPPING MALICIOUS REQUEST PAYLOADS (HTTP 429).</span>`;
+            
+            setTimeout(() => {
+                log.innerHTML += `<br><span style="color:var(--yellow)">> ANOMALY_DETECTOR: TRACKING IP CLUSTERS - ROLLING IP BAN APPLIED...</span>`;
+                
+                let attackIntensity = 38410;
+                const healInterval = setInterval(() => {
+                    attackIntensity -= 10000;
+                    if(attackIntensity > 0) {
+                        pods.innerText = `${attackIntensity} Suspicious Requests / Sec`;
+                    } else {
+                        clearInterval(healInterval);
+                        pill.className = oldPillClass;
+                        pill.innerText = oldPillText;
+                        pods.style.color = "var(--path)";
+                        pods.innerText = "0 Malicious Request Anomalies";
+                        cbStatus.style.color = "var(--path)";
+                        cbStatus.innerText = "4096-bit Dense Pool";
+                        log.innerHTML += `<br><span style="color:var(--path)">> L7_WAF: ATTACK SIGNATURE ISOLATED & EDGE CLEANED.</span>`;
+                        chaosActive = false;
+                    }
+                }, 500);
+            }, 1500);
+        }, 800);
+    }
+
+    function cycleServiceMesh() {
+        if (meshCycling || isDeploying || chaosActive) return;
+        meshCycling = true;
+        
+        const log = document.getElementById('sys-log');
+        const cbStatus = document.getElementById('circuit-breaker');
+        const pill = document.getElementById('active-env-pill');
+        
+        pill.className = "devops-pill purple";
+        pill.innerText = "Entropy_Drain";
+        cbStatus.style.color = "var(--yellow)";
+        cbStatus.innerText = "Re-pooling Entropy";
+        log.innerHTML += `<br><span style="color:var(--purple-mesh)">> CRYSTALS_KYBER: INJECTING PHYSICAL OPTICAL TRISTATE THERMAL ENTROPY...</span>`;
+        
+        setTimeout(() => {
+            cbStatus.style.color = "#fff";
+            cbStatus.innerText = "4096-bit Dense Pool";
+            pill.className = "devops-pill blue";
+            pill.innerText = "Edge_Scrapers_Ok";
+            log.innerHTML += `<br><span style="color:var(--path)">> SECURITY: ENCRYPTION ENTROPY FRESHNESS EXCEEDS QUANTUM ATTACK TOLERANCE.</span>`;
+            meshCycling = false;
+            anomalyDetected = false;
+        }, 2000);
+    }
+
+    setInterval(() => {
+        document.getElementById('traffic-load').innerText = `${(Math.random() * 15 + 25).toFixed(1)}%`;
+        if(!isDeploying && !chaosActive && !meshCycling) {
+            // Random peripheral trace behavior reporting
+            if(Math.random() > 0.90 && !anomalyDetected) {
+                anomalyDetected = true;
+                const log = document.getElementById('sys-log');
+                log.innerHTML += `<br><span style="color:var(--accent)">> LOG_FORWARDER: REFRESHING AUDIT FOOTPRINTS WITH ENCLAVE MEMORY VERIFICATION.</span>`;
+            }
+        }
+    }, 4000);
+
+    function generateIntelReport() {
+        if (currentPath.length === 0) {
+            alert("No active quantum link. Please INITIATE QUANTUM LINK first.");
+            return;
+        }
+        const overlay = document.getElementById('intel-overlay');
+        const content = document.getElementById('intel-content');
+        const time = new Date().toUTCString();
+        
+        content.innerHTML = `
+            <div class="intel-item"><span class="intel-label">Report ID</span>TITAN-${Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
+            <div class="intel-item"><span class="intel-label">Timestamp</span>${time}</div>
+            <div class="intel-item"><span class="intel-label">Connection Nodes</span>${currentPath[0]} to ${currentPath[currentPath.length-1]}</div>
+            <div class="intel-item"><span class="intel-label">Trace Route</span>${currentPath.join(' -> ')}</div>
+            <div class="intel-item"><span class="intel-label">Encryption Suite</span>RSA-4096 / AES-256-GCM</div>
+            <div class="intel-item"><span class="intel-label">Risk Assessment</span>${document.getElementById('path-cost').innerText}% Threat Level</div>
+            <div class="intel-item"><span class="intel-label">Verification Hash</span>SHA384-${Math.random().toString(16).slice(2, 22).toUpperCase()}</div>
+        `;
+        overlay.style.display = 'flex';
+    }
+
+    window.onbeforeprint = () => {
+        if (document.getElementById('intel-overlay').style.display !== 'flex') {
+            alert("Please generate the Intel Report before printing for the correct format.");
+        }
+    };
+
+    function runDijkstra() {
+        const start = document.getElementById('startPoint').value;
+        const end = document.getElementById('endPoint').value;
+        if(start === end) return;
+
+        let dist = {}; let prev = {}; let pq = new Set(Object.keys(Nodes));
+        Object.keys(Nodes).forEach(n => { dist[n] = Infinity; prev[n] = null; });
+        dist[start] = 0;
+
+        while (pq.size > 0) {
+            let u = [...pq].reduce((a, b) => dist[a] < dist[b] ? a : b);
+            pq.delete(u);
+            if (u === end || dist[u] === Infinity) break;
+            Edges.filter(e => e.includes(u)).forEach(e => {
+                let v = e[0] === u ? e[1] : e[0];
+                let w = Math.hypot(Nodes[u].lat - Nodes[v].lat, Nodes[u].lon - Nodes[v].lon);
+                if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; prev[v] = u; }
+            });
+        }
+
+        let path = []; let curr = end;
+        while(curr) { path.unshift(curr); curr = prev[curr]; }
+        currentPath = path;
+        dataPackets = [];
+        
+        let pathThreat = path.reduce((acc, city) => acc + Nodes[city].vuln, 0) / path.length;
+        document.getElementById('hop-count').innerText = path.length - 1;
+        document.getElementById('path-cost').innerText = (pathThreat * 100).toFixed(1);
+        document.getElementById('latency-val').innerText = (dist[end] * 0.4).toFixed(1) + "ms";
+        
+        const secMod = document.getElementById('sec-module');
+        const secText = document.getElementById('sec-percent');
+        const secBar = document.getElementById('sec-bar');
+        
+        if (pathThreat > 0.45) {
+            secMod.classList.add('breach');
+            secText.innerText = "IDS ALERT: UNTRUSTED";
+            document.getElementById('sys-log').innerHTML += `<br><span style="color:var(--danger)">> WARNING: ROUTE COMPROMISED.</span>`;
+            secBar.style.width = "100%";
+        } else {
+            secMod.classList.remove('breach');
+            secText.innerText = "SECURED TUNNEL";
+            document.getElementById('sys-log').innerHTML += `<br>> LINK ESTABLISHED: ${path.join(' >> ')}`;
+            secBar.style.width = (100 - (pathThreat * 100)) + "%";
+        }
+
+        for(let i=0; i<12; i++) setTimeout(() => dataPackets.push({ seg: 0, prog: 0 }), i * 150);
+    }
+
+    function animate() {
+        if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+            canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
+        }
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        dashOffset -= 0.4;
+
+        ctx.setLineDash([4, 6]); ctx.lineDashOffset = dashOffset;
+        ctx.strokeStyle = "rgba(0, 242, 255, 0.5)"; ctx.lineWidth = 1;
+        Edges.forEach(e => {
+            const p1 = getXY(Nodes[e[0]].lat, Nodes[e[0]].lon), p2 = getXY(Nodes[e[1]].lat, Nodes[e[1]].lon);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        });
+        ctx.setLineDash([]);
+
+        if(currentPath.length > 1) {
+            let pathThreat = currentPath.reduce((acc, city) => acc + Nodes[city].vuln, 0) / currentPath.length;
+            ctx.strokeStyle = pathThreat > 0.45 ? "var(--danger)" : "var(--accent)"; 
+            ctx.lineWidth = 3; ctx.shadowBlur = 15; ctx.shadowColor = ctx.strokeStyle;
+            ctx.beginPath();
+            currentPath.forEach((n, i) => {
+                const p = getXY(Nodes[n].lat, Nodes[n].lon);
+                if(i===0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+            });
+            ctx.stroke(); ctx.shadowBlur = 0;
+
+            dataPackets.forEach((p, idx) => {
+                const n1 = Nodes[currentPath[p.seg]], n2 = Nodes[currentPath[p.seg+1]];
+                const p1 = getXY(n1.lat, n1.lon), p2 = getXY(n2.lat, n2.lon);
+                const x = p1.x + (p2.x - p1.x) * p.prog, y = p1.y + (p2.y - p1.y) * p.prog;
+                ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
+                p.prog += 0.04;
+                if(p.prog >= 1) { p.prog = 0; p.seg++; }
+                if(p.seg >= currentPath.length - 1) dataPackets.splice(idx, 1);
+            });
+        }
+
+        Object.keys(Nodes).forEach(name => {
+            const p = getXY(Nodes[name].lat, Nodes[name].lon);
+            ctx.fillStyle = Nodes[name].vuln > 0.5 ? "var(--danger)" : "var(--accent)";
+            ctx.shadowBlur = 5; ctx.shadowColor = "black";
+            ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.font = "bold 11px 'JetBrains Mono'";
+            ctx.textAlign = "center";
+            ctx.strokeStyle = "black"; ctx.lineWidth = 3;
+            ctx.strokeText(name.toUpperCase(), p.x, p.y - 12);
+            ctx.fillStyle = "#fff";
+            ctx.fillText(name.toUpperCase(), p.x, p.y - 12);
+        });
+        requestAnimationFrame(animate);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const s1 = document.getElementById('startPoint'), s2 = document.getElementById('endPoint');
+        Object.keys(Nodes).sort().forEach(n => { s1.add(new Option(n, n)); s2.add(new Option(n, n)); });
+        s1.value = 'Seattle'; s2.value = 'London';
+        updateWeather(); animate();
+    });
+</script>
+</body>
+</html>
